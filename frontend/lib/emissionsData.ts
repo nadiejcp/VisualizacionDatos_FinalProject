@@ -43,10 +43,11 @@ export const AVAILABLE_GASES: string[] = [
   "SF6 Emissions", "Unspecified Emissions"
 ];
 
-// Memory store for loaded dataset
-let countryEmissionsCache: CountryEmissionRecord[] = [];
-let totalEmissionsCache: TotalEmissionRecord[] = [];
-let detailedEmissionsCache: DetailedEmissionRecord[] = [];
+// Exported mutable dataset collections
+export const COUNTRY_EMISSIONS: CountryEmissionRecord[] = [];
+export const TOTAL_EMISSIONS_BY_GAS: TotalEmissionRecord[] = [];
+export const DETAILED_EMISSIONS: DetailedEmissionRecord[] = [];
+
 let isLoaded = false;
 let loadPromise: Promise<boolean> | null = null;
 
@@ -75,44 +76,132 @@ export async function loadEmissionsData(): Promise<boolean> {
 
   loadPromise = (async () => {
     try {
-      const [countryRes, totalRes, dataRes] = await Promise.all([
-        fetch("/data/country_emissions.csv"),
-        fetch("/data/total_emissions.csv"),
-        fetch("/data/data.csv"),
-      ]);
+      const dataRes = await fetch("/data/data.csv");
+      if (!dataRes.ok) {
+        throw new Error(`Failed to fetch /data/data.csv (HTTP ${dataRes.status})`);
+      }
+      const dataText = await dataRes.text();
 
-      const [countryText, totalText, dataText] = await Promise.all([
-        countryRes.text(),
-        totalRes.text(),
-        dataRes.text(),
-      ]);
+      let countryText = "";
+      let totalText = "";
 
-      countryEmissionsCache = parseCSV<CountryEmissionRecord>(countryText, (cols) => ({
-        country: cols[0],
-        year: parseInt(cols[1], 10),
-        value: parseFloat(cols[2]),
-        units: cols[3] || "Kilotonne CO2 Equivalent",
-      }));
+      try {
+        const countryRes = await fetch("/data/country_emissions.csv");
+        if (countryRes.ok) countryText = await countryRes.text();
+      } catch (e) {
+        console.warn("country_emissions.csv fetch skipped/failed, will derive if needed", e);
+      }
 
-      totalEmissionsCache = parseCSV<TotalEmissionRecord>(totalText, (cols) => ({
-        emission: cols[0],
-        year: parseInt(cols[1], 10),
-        value: parseFloat(cols[2]),
-        units: cols[3] || "Kilotonne CO2 Equivalent",
-      }));
+      try {
+        const totalRes = await fetch("/data/total_emissions.csv");
+        if (totalRes.ok) totalText = await totalRes.text();
+      } catch (e) {
+        console.warn("total_emissions.csv fetch skipped/failed, will derive if needed", e);
+      }
 
-      detailedEmissionsCache = parseCSV<DetailedEmissionRecord>(dataText, (cols) => ({
+      const parsedDetailed = parseCSV<DetailedEmissionRecord>(dataText, (cols) => ({
         country: cols[0],
         year: parseInt(cols[1], 10),
         value: parseFloat(cols[2]),
         emission: cols[3],
         units: cols[4] || "Kilotonne CO2 Equivalent",
-      }));
+      })).filter((r) => r.country && !isNaN(r.year) && !isNaN(r.value));
+
+      DETAILED_EMISSIONS.length = 0;
+      DETAILED_EMISSIONS.push(...parsedDetailed);
+
+      if (countryText.trim()) {
+        const parsedCountry = parseCSV<CountryEmissionRecord>(countryText, (cols) => ({
+          country: cols[0],
+          year: parseInt(cols[1], 10),
+          value: parseFloat(cols[2]),
+          units: cols[3] || "Kilotonne CO2 Equivalent",
+        })).filter((r) => r.country && !isNaN(r.year) && !isNaN(r.value));
+
+        COUNTRY_EMISSIONS.length = 0;
+        COUNTRY_EMISSIONS.push(...parsedCountry);
+      } else {
+        // Derive COUNTRY_EMISSIONS from DETAILED_EMISSIONS
+        const ghgRecords = DETAILED_EMISSIONS.filter(
+          (r) => r.emission === "GHG Emissions" || r.emission === "GHG Emissions with CO2"
+        );
+        const map = new Map<string, CountryEmissionRecord>();
+        const targetRecords = ghgRecords.length > 0 ? ghgRecords : DETAILED_EMISSIONS;
+
+        targetRecords.forEach((r) => {
+          const key = `${r.country}_${r.year}`;
+          const existing = map.get(key);
+          if (existing) {
+            existing.value += r.value;
+          } else {
+            map.set(key, {
+              country: r.country,
+              year: r.year,
+              value: r.value,
+              units: r.units,
+            });
+          }
+        });
+
+        COUNTRY_EMISSIONS.length = 0;
+        COUNTRY_EMISSIONS.push(...Array.from(map.values()));
+      }
+
+      if (totalText.trim()) {
+        const parsedTotal = parseCSV<TotalEmissionRecord>(totalText, (cols) => ({
+          emission: cols[0],
+          year: parseInt(cols[1], 10),
+          value: parseFloat(cols[2]),
+          units: cols[3] || "Kilotonne CO2 Equivalent",
+        })).filter((r) => r.emission && !isNaN(r.year) && !isNaN(r.value));
+
+        TOTAL_EMISSIONS_BY_GAS.length = 0;
+        TOTAL_EMISSIONS_BY_GAS.push(...parsedTotal);
+      } else {
+        // Derive TOTAL_EMISSIONS_BY_GAS from DETAILED_EMISSIONS
+        const map = new Map<string, TotalEmissionRecord>();
+        DETAILED_EMISSIONS.forEach((r) => {
+          const key = `${r.emission}_${r.year}`;
+          const existing = map.get(key);
+          if (existing) {
+            existing.value += r.value;
+          } else {
+            map.set(key, {
+              emission: r.emission,
+              year: r.year,
+              value: r.value,
+              units: r.units,
+            });
+          }
+        });
+
+        TOTAL_EMISSIONS_BY_GAS.length = 0;
+        TOTAL_EMISSIONS_BY_GAS.push(...Array.from(map.values()));
+      }
+
+      // Dynamically update available lists
+      const countries = Array.from(new Set(DETAILED_EMISSIONS.map((r) => r.country))).sort();
+      if (countries.length > 0) {
+        AVAILABLE_COUNTRIES.length = 0;
+        AVAILABLE_COUNTRIES.push(...countries);
+      }
+
+      const years = Array.from(new Set(DETAILED_EMISSIONS.map((r) => r.year))).sort((a, b) => a - b);
+      if (years.length > 0) {
+        AVAILABLE_YEARS.length = 0;
+        AVAILABLE_YEARS.push(...years);
+      }
+
+      const gases = Array.from(new Set(DETAILED_EMISSIONS.map((r) => r.emission))).sort();
+      if (gases.length > 0) {
+        AVAILABLE_GASES.length = 0;
+        AVAILABLE_GASES.push(...gases);
+      }
 
       isLoaded = true;
       return true;
     } catch (err) {
-      console.error("Failed to load emissions CSV data:", err);
+      console.error("Failed to load emissions CSV data from public/data/data.csv:", err);
       return false;
     }
   })();
@@ -120,23 +209,24 @@ export async function loadEmissionsData(): Promise<boolean> {
   return loadPromise;
 }
 
+// Auto-trigger loading if in browser environment
+if (typeof window !== "undefined") {
+  loadEmissionsData();
+}
+
 export function isEmissionsDataLoaded(): boolean {
   return isLoaded;
 }
 
 export function getCountryEmissions(): CountryEmissionRecord[] {
-  return countryEmissionsCache;
+  return COUNTRY_EMISSIONS;
 }
 
 export function getTotalEmissionsByGas(): TotalEmissionRecord[] {
-  return totalEmissionsCache;
+  return TOTAL_EMISSIONS_BY_GAS;
 }
 
 export function getDetailedEmissions(): DetailedEmissionRecord[] {
-  return detailedEmissionsCache;
+  return DETAILED_EMISSIONS;
 }
 
-// Backward compatibility exports (read from cache)
-export const COUNTRY_EMISSIONS = countryEmissionsCache;
-export const TOTAL_EMISSIONS_BY_GAS = totalEmissionsCache;
-export const DETAILED_EMISSIONS = detailedEmissionsCache;

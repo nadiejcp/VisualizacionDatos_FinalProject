@@ -5,6 +5,7 @@ import {
   AVAILABLE_COUNTRIES,
   AVAILABLE_YEARS,
   AVAILABLE_GASES,
+  loadEmissionsData,
 } from "../lib/emissionsData";
 import {
   getGlobalSummary,
@@ -32,6 +33,15 @@ import { WorldMap } from "../components/WorldMap";
 const COUNTRY_COLORS = UI_PALETTE.chartColors;
 
 export default function Home() {
+  // Data load state
+  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    loadEmissionsData().then(() => {
+      setIsDataLoaded(true);
+    });
+  }, []);
+
   // Interactive State
   const [selectedYear, setSelectedYear] = useState<number>(2014);
   const [selectedGas, setSelectedGas] = useState<string>("All");
@@ -82,23 +92,23 @@ export default function Home() {
   // Analytical Calculations via dataProcessor.ts
   const globalSummary = useMemo(() => {
     return getGlobalSummary(selectedYear, selectedGas);
-  }, [selectedYear, selectedGas]);
+  }, [selectedYear, selectedGas, isDataLoaded]);
 
   const topEmitters = useMemo(() => {
     return getTopEmitters(selectedYear, selectedGas, 43);
-  }, [selectedYear, selectedGas]);
+  }, [selectedYear, selectedGas, isDataLoaded]);
 
   const gasComposition = useMemo(() => {
     return getGasComposition(selectedYear, selectedCountry);
-  }, [selectedYear, selectedCountry]);
+  }, [selectedYear, selectedCountry, isDataLoaded]);
 
   const countryComparison = useMemo(() => {
     return compareTwoCountries(compareCountryA, compareCountryB, selectedGas);
-  }, [compareCountryA, compareCountryB, selectedGas]);
+  }, [compareCountryA, compareCountryB, selectedGas, isDataLoaded]);
 
   const automatedInsights = useMemo(() => {
     return generateEnvironmentalInsights(selectedYear);
-  }, [selectedYear]);
+  }, [selectedYear, isDataLoaded]);
 
   // Theme Consumption
   const activeGasTheme = getGasTheme(selectedGas);
