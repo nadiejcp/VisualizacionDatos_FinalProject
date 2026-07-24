@@ -26,53 +26,7 @@ import {
   UI_PALETTE,
   GAS_PALETTE,
 } from "../lib/theme";
-
-// Country Geographic Projection Coordinates (SVG Canvas 800x420)
-const COUNTRY_COORDINATES: Record<string, { x: number; y: number; code: string }> = {
-  "Australia": { x: 695, y: 320, code: "AUS" },
-  "Austria": { x: 432, y: 138, code: "AUT" },
-  "Belarus": { x: 462, y: 118, code: "BLR" },
-  "Belgium": { x: 409, y: 128, code: "BEL" },
-  "Bulgaria": { x: 456, y: 148, code: "BGR" },
-  "Canada": { x: 180, y: 105, code: "CAN" },
-  "Croatia": { x: 433, y: 144, code: "HRV" },
-  "Cyprus": { x: 474, y: 172, code: "CYP" },
-  "Czech Republic": { x: 434, y: 132, code: "CZE" },
-  "Denmark": { x: 421, y: 112, code: "DNK" },
-  "Estonia": { x: 455, y: 102, code: "EST" },
-  "European Union": { x: 422, y: 134, code: "EU" },
-  "Finland": { x: 457, y: 92, code: "FIN" },
-  "France": { x: 404, y: 142, code: "FRA" },
-  "Germany": { x: 423, y: 128, code: "DEU" },
-  "Greece": { x: 448, y: 162, code: "GRC" },
-  "Hungary": { x: 443, y: 138, code: "HUN" },
-  "Iceland": { x: 357, y: 82, code: "ISL" },
-  "Ireland": { x: 381, y: 120, code: "IRL" },
-  "Italy": { x: 427, y: 152, code: "ITA" },
-  "Japan": { x: 715, y: 168, code: "JPN" },
-  "Latvia": { x: 454, y: 108, code: "LVA" },
-  "Liechtenstein": { x: 421, y: 140, code: "LIE" },
-  "Lithuania": { x: 453, y: 112, code: "LTU" },
-  "Luxembourg": { x: 413, y: 132, code: "LUX" },
-  "Malta": { x: 431, y: 172, code: "MLT" },
-  "Monaco": { x: 416, y: 148, code: "MCO" },
-  "Netherlands": { x: 411, y: 124, code: "NLD" },
-  "New Zealand": { x: 785, y: 355, code: "NZL" },
-  "Norway": { x: 418, y: 98, code: "NOR" },
-  "Poland": { x: 442, y: 126, code: "POL" },
-  "Portugal": { x: 381, y: 160, code: "PRT" },
-  "Romania": { x: 455, y: 140, code: "ROU" },
-  "Russian Federation": { x: 575, y: 105, code: "RUS" },
-  "Slovakia": { x: 443, y: 134, code: "SVK" },
-  "Slovenia": { x: 433, y: 142, code: "SVN" },
-  "Spain": { x: 391, y: 158, code: "ESP" },
-  "Sweden": { x: 441, y: 100, code: "SWE" },
-  "Switzerland": { x: 418, y: 140, code: "CHE" },
-  "Turkey": { x: 478, y: 162, code: "TUR" },
-  "Ukraine": { x: 469, y: 132, code: "UKR" },
-  "United Kingdom": { x: 392, y: 116, code: "GBR" },
-  "United States of America": { x: 195, y: 162, code: "USA" },
-};
+import { WorldMap } from "../components/WorldMap";
 
 // Color assignment array for drag-and-drop plotted countries
 const COUNTRY_COLORS = UI_PALETTE.chartColors;
@@ -547,134 +501,20 @@ export default function Home() {
               </div>
             </div>
 
-            {/* SVG Interactive World Map Canvas */}
-            <div className="relative w-full overflow-hidden pt-2 bg-slate-950/80 rounded-xl border border-slate-800/80 p-2">
-              <svg viewBox="0 0 800 420" className="w-full h-auto overflow-visible select-none">
-                <defs>
-                  {/* Glowing Filter for Active Country Bubbles */}
-                  <filter id="bubbleGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                  </filter>
-                </defs>
-
-                {/* Stylized Dark World Map Continent Outlines */}
-                <g fill="#1e293b" stroke="#334155" strokeWidth="0.75" opacity="0.65">
-                  {/* North America */}
-                  <path d="M 120 70 L 260 70 L 290 140 L 250 180 L 190 220 L 160 170 L 110 130 Z" />
-                  {/* South America */}
-                  <path d="M 230 230 L 290 230 L 320 300 L 280 370 L 250 330 L 230 260 Z" />
-                  {/* Europe */}
-                  <path d="M 370 80 L 470 70 L 480 150 L 430 180 L 370 140 Z" />
-                  {/* Africa */}
-                  <path d="M 370 185 L 480 185 L 490 270 L 440 340 L 380 290 L 365 220 Z" />
-                  {/* Asia */}
-                  <path d="M 480 60 L 740 60 L 750 200 L 680 240 L 580 220 L 480 160 Z" />
-                  {/* Australia */}
-                  <path d="M 640 280 L 750 280 L 760 360 L 660 360 Z" />
-                </g>
-
-                {/* Latitude / Longitude Grid Lines */}
-                {[100, 200, 300].map((y) => (
-                  <line key={`lat-${y}`} x1="30" y1={y} x2="770" y2={y} stroke="#1e293b" strokeDasharray="2 4" strokeWidth="0.5" />
-                ))}
-                {[200, 400, 600].map((x) => (
-                  <line key={`lng-${x}`} x1={x} y1="30" x2={x} y2="390" stroke="#1e293b" strokeDasharray="2 4" strokeWidth="0.5" />
-                ))}
-
-                {/* Country Emissions Bubbles */}
-                {topEmitters.map((emitter) => {
-                  const coord = COUNTRY_COORDINATES[emitter.country];
-                  if (!coord) return null;
-
-                  // Radius scaled proportionally to emission value sqrt
-                  const rawRadius = Math.sqrt(emitter.value / maxCountryValue) * 38;
-                  const radius = Math.max(5, Math.min(42, rawRadius));
-
-                  const isHovered = hoveredCountryData?.country === emitter.country;
-                  const isPlotted = plottedCountries.includes(emitter.country);
-                  const isTopRank = emitter.rank === 1;
-
-                  return (
-                    <g
-                      key={emitter.country}
-                      onDragStart={(e) => handleDragStartBubble(e as any, emitter.country)}
-                      className="cursor-grab active:cursor-grabbing group"
-                      onMouseEnter={() => setHoveredCountryData(emitter)}
-                      onMouseLeave={() => setHoveredCountryData(null)}
-                      onClick={() => addCountryToBar(emitter.country)}
-                    >
-                      {/* Outer Pulsing Ring for Top #1 Emitter */}
-                      {isTopRank && (
-                        <circle
-                          cx={coord.x}
-                          cy={coord.y}
-                          r={radius + 8}
-                          fill="none"
-                          stroke={activeGasTheme.hex}
-                          strokeWidth="1.5"
-                          className="animate-ping opacity-60"
-                        />
-                      )}
-
-                      {/* Main Country Bubble */}
-                      <circle
-                        cx={coord.x}
-                        cy={coord.y}
-                        r={isHovered ? radius + 4 : radius}
-                        fill={isPlotted ? "#10b981" : activeGasTheme.hex}
-                        fillOpacity={isHovered || isPlotted ? 0.85 : 0.45}
-                        stroke={isHovered || isPlotted ? "#ffffff" : activeGasTheme.hex}
-                        strokeWidth={isHovered || isPlotted ? 2.5 : 1.2}
-                        filter={isHovered ? "url(#bubbleGlow)" : undefined}
-                        className="transition-all duration-300 cursor-grab active:cursor-grabbing"
-                        {...({
-                          draggable: true,
-                          onDragStart: (e: React.DragEvent) => handleDragStartBubble(e, emitter.country),
-                        } as any)}
-                      />
-
-                      {/* Center Point */}
-                      <circle cx={coord.x} cy={coord.y} r="2" fill="#ffffff" />
-
-                      {/* Text Label for Major Emitters or Hovered */}
-                      {(radius > 12 || isHovered || isPlotted) && (
-                        <text
-                          x={coord.x}
-                          y={coord.y + (radius > 16 ? 4 : -radius - 4)}
-                          fill="#ffffff"
-                          fontSize={isHovered ? "11" : "9"}
-                          fontWeight={isHovered || isPlotted ? "bold" : "600"}
-                          textAnchor="middle"
-                          className="pointer-events-none drop-shadow-md font-mono"
-                        >
-                          {coord.code}
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {/* Floating Tooltip details when a country bubble is hovered */}
-              {hoveredCountryData && (
-                <div className="absolute bottom-4 left-4 pointer-events-none bg-slate-900/95 p-3 rounded-xl border border-emerald-500/50 shadow-xl space-y-1 text-xs backdrop-blur-md">
-                  <div className="font-bold text-slate-100 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    {hoveredCountryData.country}
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono">
-                      Rank #{hoveredCountryData.rank}
-                    </span>
-                  </div>
-                  <div className="text-slate-300">
-                    Emissions ({selectedYear}): <span className="font-bold text-emerald-400">{formatEmissionsValue(hoveredCountryData.value)}</span>
-                  </div>
-                  <div className="text-slate-400 text-[11px]">
-                    Drag to bar below or click to compare!
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* World Map Component */}
+            <WorldMap
+              selectedYear={selectedYear}
+              selectedGas={selectedGas}
+              selectedCountry={selectedCountry}
+              topEmitters={topEmitters}
+              maxCountryValue={maxCountryValue}
+              activeGasTheme={activeGasTheme}
+              hoveredCountryData={hoveredCountryData}
+              onHoverCountry={setHoveredCountryData}
+              onSelectCountry={setSelectedCountry}
+              onAddCountryToBar={addCountryToBar}
+              plottedCountries={plottedCountries}
+            />
 
             {/* Map Legend */}
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/80">
