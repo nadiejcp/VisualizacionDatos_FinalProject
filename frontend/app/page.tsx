@@ -354,11 +354,10 @@ export default function Home() {
             <div className="flex items-center gap-3 w-full md:w-auto">
               <button
                 onClick={() => setIsPlayingTimeline(!isPlayingTimeline)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                  isPlayingTimeline
-                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30"
-                    : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
-                }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${isPlayingTimeline
+                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30"
+                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                  }`}
               >
                 {isPlayingTimeline ? (
                   <>
@@ -414,11 +413,10 @@ export default function Home() {
                   <button
                     key={gas}
                     onClick={() => setSelectedGas(gas)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                      isActive
-                        ? `${gasTheme.twBg} ${gasTheme.twText} ${gasTheme.twBorder} border shadow-md`
-                        : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:border-slate-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${isActive
+                      ? `${gasTheme.twBg} ${gasTheme.twText} ${gasTheme.twBorder} border shadow-md`
+                      : "bg-slate-900/80 text-slate-400 border border-slate-800 hover:text-slate-200 hover:border-slate-700"
+                      }`}
                   >
                     {gas === "All" ? "All GHG" : gas}
                   </button>
@@ -539,11 +537,10 @@ export default function Home() {
               </div>
 
               {/* ALWAYS-VISIBLE LIVE YEAR & VALUE INDICATOR BADGE */}
-              <div className={`text-right text-xs px-3 py-2 rounded-xl border transition-all duration-300 ${
-                indicatorData.isHovered
-                  ? "bg-slate-900 border-emerald-500/50 shadow-lg shadow-emerald-950/50"
-                  : "bg-slate-950/90 border-slate-800"
-              }`}>
+              <div className={`text-right text-xs px-3 py-2 rounded-xl border transition-all duration-300 ${indicatorData.isHovered
+                ? "bg-slate-900 border-emerald-500/50 shadow-lg shadow-emerald-950/50"
+                : "bg-slate-950/90 border-slate-800"
+                }`}>
                 <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{indicatorData.label}</div>
                 <div className="text-emerald-400 font-extrabold text-sm sm:text-base">{indicatorData.value}</div>
                 <div className="text-slate-500 text-[10px] font-medium">{indicatorData.share}</div>
@@ -601,8 +598,7 @@ export default function Home() {
                   return (
                     <g
                       key={emitter.country}
-                      draggable={true}
-                      onDragStart={(e) => handleDragStartBubble(e, emitter.country)}
+                      onDragStart={(e) => handleDragStartBubble(e as any, emitter.country)}
                       className="cursor-grab active:cursor-grabbing group"
                       onMouseEnter={() => setHoveredCountryData(emitter)}
                       onMouseLeave={() => setHoveredCountryData(null)}
@@ -631,7 +627,11 @@ export default function Home() {
                         stroke={isHovered || isPlotted ? "#ffffff" : activeGasTheme.hex}
                         strokeWidth={isHovered || isPlotted ? 2.5 : 1.2}
                         filter={isHovered ? "url(#bubbleGlow)" : undefined}
-                        className="transition-all duration-300"
+                        className="transition-all duration-300 cursor-grab active:cursor-grabbing"
+                        {...({
+                          draggable: true,
+                          onDragStart: (e: React.DragEvent) => handleDragStartBubble(e, emitter.country),
+                        } as any)}
                       />
 
                       {/* Center Point */}
@@ -784,11 +784,10 @@ export default function Home() {
               }}
               onDragLeave={() => setIsDragOverDropZone(false)}
               onDrop={handleDropOnBar}
-              className={`p-4 rounded-xl transition-all duration-300 flex flex-wrap items-center gap-3 min-h-[72px] border-2 ${
-                isDragOverDropZone
-                  ? "bg-emerald-950/40 border-emerald-400 border-dashed scale-[1.01]"
-                  : "bg-slate-950/80 border-slate-800 border-dashed"
-              }`}
+              className={`p-4 rounded-xl transition-all duration-300 flex flex-wrap items-center gap-3 min-h-[72px] border-2 ${isDragOverDropZone
+                ? "bg-emerald-950/40 border-emerald-400 border-dashed scale-[1.01]"
+                : "bg-slate-950/80 border-slate-800 border-dashed"
+                }`}
             >
               {plottedCountries.length === 0 ? (
                 <div className="w-full text-center py-2 text-xs text-slate-500 flex items-center justify-center gap-2">
@@ -882,14 +881,74 @@ export default function Home() {
                 </div>
               ) : (
                 <svg viewBox={`0 0 ${svgGraphWidth} ${svgGraphHeight}`} className="w-full h-auto overflow-visible select-none">
-                  {/* Grid Lines */}
+                  {/* Axis Border Boundary Lines */}
+                  <line
+                    x1={graphPaddingLeft}
+                    y1={graphPaddingTop}
+                    x2={graphPaddingLeft}
+                    y2={svgGraphHeight - graphPaddingBottom}
+                    stroke="#475569"
+                    strokeWidth="1.5"
+                  />
+                  <line
+                    x1={graphPaddingLeft}
+                    y1={svgGraphHeight - graphPaddingBottom}
+                    x2={svgGraphWidth - graphPaddingRight}
+                    y2={svgGraphHeight - graphPaddingBottom}
+                    stroke="#475569"
+                    strokeWidth="1.5"
+                  />
+
+                  {/* Y-AXIS UNIT TITLE */}
+                  <text
+                    x="18"
+                    y={(graphPaddingTop + (svgGraphHeight - graphPaddingBottom)) / 2}
+                    fill="#94a3b8"
+                    fontSize="10"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                    transform={`rotate(-90, 18, ${(graphPaddingTop + (svgGraphHeight - graphPaddingBottom)) / 2})`}
+                    className="font-sans"
+                  >
+                    Volume (T CO₂e)
+                  </text>
+
+                  {/* X-AXIS UNIT TITLE */}
+                  <text
+                    x={(graphPaddingLeft + (svgGraphWidth - graphPaddingRight)) / 2}
+                    y={svgGraphHeight - 6}
+                    fill="#94a3b8"
+                    fontSize="10"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                    className="font-sans"
+                  >
+                    Years
+                  </text>
+
+                  {/* Horizontal Grid Lines & Y-Axis Labels */}
                   {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-                    const y = svgGraphHeight - graphPadding - pct * (svgGraphHeight - graphPadding * 2);
+                    const y = svgGraphHeight - graphPaddingBottom - pct * (svgGraphHeight - graphPaddingTop - graphPaddingBottom);
                     const val = graphMinVal + pct * (graphMaxVal - graphMinVal);
                     return (
                       <g key={`graph-grid-${i}`}>
-                        <line x1={graphPadding} y1={y} x2={svgGraphWidth - graphPadding} y2={y} stroke="#1e293b" strokeDasharray="3 3" strokeWidth="1" />
-                        <text x={graphPadding - 5} y={y + 3} fill="#64748b" fontSize="9" textAnchor="end font-mono">
+                        <line
+                          x1={graphPaddingLeft}
+                          y1={y}
+                          x2={svgGraphWidth - graphPaddingRight}
+                          y2={y}
+                          stroke="#1e293b"
+                          strokeDasharray="3 3"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x={graphPaddingLeft - 10}
+                          y={y + 3}
+                          fill="#64748b"
+                          fontSize="9"
+                          textAnchor="end"
+                          className="font-mono"
+                        >
                           {(val / 1000).toFixed(0)}k
                         </text>
                       </g>
@@ -899,11 +958,25 @@ export default function Home() {
                   {/* Year X-Axis Ticks */}
                   {AVAILABLE_YEARS.map((yr, idx) => {
                     if (idx % 3 !== 0 && idx !== AVAILABLE_YEARS.length - 1) return null;
-                    const x = graphPadding + (idx / (AVAILABLE_YEARS.length - 1)) * (svgGraphWidth - graphPadding * 2);
+                    const x = graphPaddingLeft + (idx / (AVAILABLE_YEARS.length - 1)) * (svgGraphWidth - graphPaddingLeft - graphPaddingRight);
                     return (
                       <g key={`year-tick-${yr}`}>
-                        <line x1={x} y1={svgGraphHeight - graphPadding} x2={x} y2={svgGraphHeight - graphPadding + 5} stroke="#334155" strokeWidth="1" />
-                        <text x={x} y={svgGraphHeight - graphPadding + 16} fill="#94a3b8" fontSize="9" textAnchor="middle" className="font-mono">
+                        <line
+                          x1={x}
+                          y1={svgGraphHeight - graphPaddingBottom}
+                          x2={x}
+                          y2={svgGraphHeight - graphPaddingBottom + 5}
+                          stroke="#334155"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x={x}
+                          y={svgGraphHeight - graphPaddingBottom + 16}
+                          fill="#94a3b8"
+                          fontSize="9"
+                          textAnchor="middle"
+                          className="font-mono"
+                        >
                           {yr}
                         </text>
                       </g>
@@ -914,8 +987,8 @@ export default function Home() {
                   {plottedTimelines.map((item) => {
                     const rangeY = graphMaxVal - graphMinVal || 1;
                     const pts = item.timeline.map((d, index) => {
-                      const x = graphPadding + (index / (item.timeline.length - 1)) * (svgGraphWidth - graphPadding * 2);
-                      const y = svgGraphHeight - graphPadding - ((d.value - graphMinVal) / rangeY) * (svgGraphHeight - graphPadding * 2);
+                      const x = graphPaddingLeft + (index / (item.timeline.length - 1)) * (svgGraphWidth - graphPaddingLeft - graphPaddingRight);
+                      const y = svgGraphHeight - graphPaddingBottom - ((d.value - graphMinVal) / rangeY) * (svgGraphHeight - graphPaddingTop - graphPaddingBottom);
                       return { x, y, year: d.year, value: d.value };
                     });
 
@@ -1062,25 +1135,22 @@ export default function Home() {
               <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
                 <button
                   onClick={() => setLeaderboardTab("top")}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    leaderboardTab === "top" ? "bg-emerald-500/20 text-emerald-300 font-semibold" : "text-slate-400 hover:text-slate-200"
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-medium transition-all ${leaderboardTab === "top" ? "bg-emerald-500/20 text-emerald-300 font-semibold" : "text-slate-400 hover:text-slate-200"
+                    }`}
                 >
                   Highest Emitters
                 </button>
                 <button
                   onClick={() => setLeaderboardTab("reducers")}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    leaderboardTab === "reducers" ? "bg-emerald-500/20 text-emerald-300 font-semibold" : "text-slate-400 hover:text-slate-200"
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-medium transition-all ${leaderboardTab === "reducers" ? "bg-emerald-500/20 text-emerald-300 font-semibold" : "text-slate-400 hover:text-slate-200"
+                    }`}
                 >
                   Top Reducers
                 </button>
                 <button
                   onClick={() => setLeaderboardTab("growth")}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    leaderboardTab === "growth" ? "bg-emerald-500/20 text-emerald-300 font-semibold" : "text-slate-400 hover:text-slate-200"
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-medium transition-all ${leaderboardTab === "growth" ? "bg-emerald-500/20 text-emerald-300 font-semibold" : "text-slate-400 hover:text-slate-200"
+                    }`}
                 >
                   Highest Growth
                 </button>
