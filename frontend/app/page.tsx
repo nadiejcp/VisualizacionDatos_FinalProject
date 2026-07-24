@@ -109,6 +109,11 @@ export default function Home() {
     return Math.max(...topEmitters.map((e) => e.value), 1);
   }, [topEmitters]);
 
+  const countryDeepStats = useMemo(() => {
+    if (selectedCountry === "All" || !selectedCountry) return null;
+    return getCountryDeepStats(selectedCountry);
+  }, [selectedCountry]);
+
   // Always-Visible Indicator Badge Info
   const indicatorData = useMemo(() => {
     if (hoveredCountryData) {
@@ -537,42 +542,109 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Gas Composition Donut Breakdown */}
+          {/* Gas Composition Donut Breakdown & Country Deep Dive */}
           <div className={`p-6 rounded-2xl ${UI_PALETTE.cardBg} space-y-4 flex flex-col justify-between`}>
-            <div>
-              <h3 className="text-lg font-bold text-slate-100">Gas Breakdown ({selectedYear})</h3>
-              <p className="text-xs text-slate-400">Share of specific greenhouse gases in total emissions</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-100">
+                  Gas Breakdown ({selectedYear})
+                </h3>
+                {selectedCountry !== "All" && (
+                  <button
+                    onClick={() => setSelectedCountry("All")}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20"
+                  >
+                    Reset to Global
+                  </button>
+                )}
+              </div>
+
+              {/* Active Scope Badge */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">Target Scope:</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  {selectedCountry === "All" ? "Global Scale (43 Nations)" : selectedCountry}
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {gasComposition.map((item) => {
-                const itemTheme = getGasTheme(item.gas);
-                return (
-                  <div key={item.gas} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 font-medium">
-                        <span className={`w-2.5 h-2.5 rounded-full ${itemTheme.twBg} border ${itemTheme.twBorder}`} style={{ backgroundColor: itemTheme.hex }} />
-                        <span className="text-slate-200">{item.gas}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-semibold text-slate-100">{item.percentage.toFixed(1)}%</span>
-                        <span className="text-slate-500 text-[10px] ml-1.5">({formatEmissionsValue(item.value)})</span>
-                      </div>
-                    </div>
+            {/* Country Deep Dive Quick Stats Card (If a country is selected) */}
+            {countryDeepStats && (
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200">{countryDeepStats.country} Highlights</span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                      countryDeepStats.netChangePercent <= 0
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                    }`}
+                  >
+                    {countryDeepStats.status.replace("_", " ").toUpperCase()}
+                  </span>
+                </div>
 
-                    {/* Progress Bar */}
-                    <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.max(item.percentage, 2)}%`,
-                          backgroundColor: itemTheme.hex,
-                        }}
-                      />
-                    </div>
+                <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                  <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">Historical Peak</span>
+                    <span className="font-bold text-slate-100">
+                      {countryDeepStats.peakYear}: {formatEmissionsValue(countryDeepStats.peakValue)}
+                    </span>
                   </div>
-                );
-              })}
+                  <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block text-[10px]">1990 Baseline Delta</span>
+                    <span
+                      className={`font-bold ${
+                        countryDeepStats.netChangePercent <= 0 ? "text-emerald-400" : "text-rose-400"
+                      }`}
+                    >
+                      {countryDeepStats.netChangePercent > 0 ? "+" : ""}
+                      {countryDeepStats.netChangePercent.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Gas Composition Progress Bars */}
+            <div className="space-y-3">
+              {gasComposition.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-500">
+                  No breakdown data available for this country selection in {selectedYear}.
+                </div>
+              ) : (
+                gasComposition.map((item) => {
+                  const itemTheme = getGasTheme(item.gas);
+                  return (
+                    <div key={item.gas} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 font-medium">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${itemTheme.twBg} border ${itemTheme.twBorder}`}
+                            style={{ backgroundColor: itemTheme.hex }}
+                          />
+                          <span className="text-slate-200">{item.gas}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold text-slate-100">{item.percentage.toFixed(1)}%</span>
+                          <span className="text-slate-500 text-[10px] ml-1.5">({formatEmissionsValue(item.value)})</span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.max(item.percentage, 2)}%`,
+                            backgroundColor: itemTheme.hex,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">
@@ -583,7 +655,9 @@ export default function Home() {
                 Key Gas Insight
               </div>
               <p className="text-[11px] leading-relaxed">
-                CO₂ continues to dominate the global greenhouse footprint, followed by Methane (CH₄) and Nitrous Oxide (N₂O).
+                {selectedCountry === "All"
+                  ? "CO₂ continues to dominate the global greenhouse footprint, followed by Methane (CH₄) and Nitrous Oxide (N₂O)."
+                  : `Showing specific greenhouse gas composition for ${selectedCountry} in year ${selectedYear}.`}
               </p>
             </div>
           </div>

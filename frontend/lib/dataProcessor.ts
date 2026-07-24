@@ -219,12 +219,45 @@ export function getTopEmitters(
 }
 
 /**
+ * Normalize country names to match dataset entries (e.g. "USA" -> "United States of America", "Russia" -> "Russian Federation")
+ */
+export function normalizeCountryName(rawName: string): string {
+  if (!rawName || rawName === "All") return "All";
+  const lower = rawName.trim().toLowerCase();
+
+  if (lower.includes("united states") || lower === "usa" || lower === "us") return "United States of America";
+  if (lower.includes("russia") || lower === "rus") return "Russian Federation";
+  if (lower.includes("czech")) return "Czech Republic";
+  if (lower.includes("united kingdom") || lower === "uk" || lower === "gb") return "United Kingdom";
+
+  const exactMatch = AVAILABLE_COUNTRIES.find((c) => c.toLowerCase() === lower);
+  if (exactMatch) return exactMatch;
+
+  const partialMatch = AVAILABLE_COUNTRIES.find(
+    (c) => c.toLowerCase().includes(lower) || lower.includes(c.toLowerCase())
+  );
+  return partialMatch || rawName;
+}
+
+/**
  * Get gas composition breakdown for a selected year and optional country filter
  */
 export function getGasComposition(year: number, countryFilter?: string): GasCompositionItem[] {
+  const normCountry = normalizeCountryName(countryFilter || "All");
   let records = DETAILED_EMISSIONS.filter((r) => r.year === year);
-  if (countryFilter && countryFilter !== "All") {
-    records = records.filter((r) => r.country.toLowerCase() === countryFilter.toLowerCase());
+
+  if (normCountry !== "All") {
+    let filtered = records.filter(
+      (r) => r.country.toLowerCase() === normCountry.toLowerCase()
+    );
+    if (filtered.length === 0) {
+      filtered = records.filter(
+        (r) => r.country.toLowerCase().includes(normCountry.toLowerCase()) || normCountry.toLowerCase().includes(r.country.toLowerCase())
+      );
+    }
+    if (filtered.length > 0) {
+      records = filtered;
+    }
   }
 
   const totalsByGas: Record<string, number> = {};
@@ -291,9 +324,15 @@ export function getEmissionsTimeline(
  * Get detailed statistical metrics for a single country
  */
 export function getCountryDeepStats(countryName: string): CountryDeepStats | null {
-  const records = COUNTRY_EMISSIONS.filter(
-    (r) => r.country.toLowerCase() === countryName.toLowerCase()
+  const normName = normalizeCountryName(countryName);
+  let records = COUNTRY_EMISSIONS.filter(
+    (r) => r.country.toLowerCase() === normName.toLowerCase()
   );
+  if (records.length === 0) {
+    records = COUNTRY_EMISSIONS.filter(
+      (r) => r.country.toLowerCase().includes(normName.toLowerCase()) || normName.toLowerCase().includes(r.country.toLowerCase())
+    );
+  }
   if (records.length === 0) return null;
 
   const sortedByYear = [...records].sort((a, b) => a.year - b.year);
