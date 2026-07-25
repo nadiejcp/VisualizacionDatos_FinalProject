@@ -23,23 +23,23 @@ export interface DetailedEmissionRecord {
 }
 
 export const AVAILABLE_COUNTRIES: string[] = [
-  "Australia", "Austria", "Belarus", "Belgium", "Bulgaria", "Canada", "Croatia", 
-  "Cyprus", "Czech Republic", "Denmark", "Estonia", "European Union", "Finland", 
-  "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy", 
-  "Japan", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", 
-  "Monaco", "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", 
-  "Romania", "Russian Federation", "Slovakia", "Slovenia", "Spain", "Sweden", 
+  "Australia", "Austria", "Belarus", "Belgium", "Bulgaria", "Canada", "Croatia",
+  "Cyprus", "Czech Republic", "Denmark", "Estonia", "European Union", "Finland",
+  "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy",
+  "Japan", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta",
+  "Monaco", "Netherlands", "New Zealand", "Norway", "Poland", "Portugal",
+  "Romania", "Russian Federation", "Slovakia", "Slovenia", "Spain", "Sweden",
   "Switzerland", "Turkey", "Ukraine", "United Kingdom", "United States of America"
 ];
 
 export const AVAILABLE_YEARS: number[] = [
-  1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 
+  1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
   2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014
 ];
 
 export const AVAILABLE_GASES: string[] = [
-  "CH4 Emissions", "CO2 Emissions", "GHG Emissions", "GHG Emissions with CO2", 
-  "HFC Emissions", "N2O Emissions", "NF3 Emissions", "PFC Emissions", 
+  "CH4 Emissions", "CO2 Emissions", "GHG Emissions", "GHG Emissions with CO2",
+  "HFC Emissions", "N2O Emissions", "NF3 Emissions", "PFC Emissions",
   "SF6 Emissions", "Unspecified Emissions"
 ];
 
@@ -229,4 +229,3 @@ export function getTotalEmissionsByGas(): TotalEmissionRecord[] {
 export function getDetailedEmissions(): DetailedEmissionRecord[] {
   return DETAILED_EMISSIONS;
 }
-
